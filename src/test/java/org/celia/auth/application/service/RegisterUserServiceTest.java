@@ -1,10 +1,19 @@
 package org.celia.auth.application.service;
 
+import org.celia.auth.application.exception.EmailAlreadyExistsException;
+import org.celia.auth.application.port.out.PasswordEncoderPort;
+import org.celia.auth.application.port.out.UserPersistencePort;
+import org.celia.auth.domain.entity.User;
+import org.celia.auth.domain.usecase.RegisterUserUseCase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class RegisterUserServiceTest {
@@ -20,18 +29,27 @@ public class RegisterUserServiceTest {
 
     @Test
     void shouldRegisterUserSuccessfully_whenEmailIsUnique() {
-        // Given
         var command = new RegisterUserUseCase.RegisterUserCommand("test@example.com", "password123");
+
         when(userPersistencePort.existsByEmail(command.email())).thenReturn(false);
         when(passwordEncoderPort.encode(command.password())).thenReturn("encodedPassword");
 
-        // When
+        User savedUser = User.builder()
+                .id(1L)
+                .email("test@example.com")
+                .password("encodedPassword")
+                .role("USER")
+                .build();
+
+        when(userPersistencePort.save(any(User.class))).thenReturn(savedUser);
+
         User registeredUser = registerUserService.registerUser(command);
 
-        // Then
         assertNotNull(registeredUser);
-        assertEquals("encodedPassword", registeredUser.getPassword());
-        verify(userPersistencePort).save(any(User.class)); // ??m b?o h?m save ???c g?i
+
+        assertEquals(1L, registeredUser.getId());
+        assertEquals("test@example.com", registeredUser.getEmail());
+        verify(userPersistencePort).save(any(User.class));
     }
 
 
