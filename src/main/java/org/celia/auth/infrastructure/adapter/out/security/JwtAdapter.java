@@ -51,7 +51,18 @@ public class JwtAdapter implements TokenPort {
 
     @Override
     public String generateRefreshToken(User user) {
-        return buildToken(new HashMap<>(), user.getEmail(), refreshTokenExpiration);
+        String tokenString = buildToken(new HashMap<>(), user.getEmail(), refreshTokenExpiration);
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(tokenString)
+                .expiryDate(new Date(System.currentTimeMillis() + refreshTokenExpiration).toInstant())
+                .revoked(false)
+                .build();
+
+        refreshTokenPersistencePort.save(refreshToken);
+
+        return tokenString;
     }
 
     @Override
